@@ -114,7 +114,11 @@ BASE_HTML = """
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { background: #0f172a; color: white; }
-        .card { background: #1e293b; border: none; }
+        .card {
+            background: #1e293b;
+            border: none;
+            color: white;
+            }
         .completed { text-decoration: line-through; opacity: 0.6; }
     </style>
 </head>
