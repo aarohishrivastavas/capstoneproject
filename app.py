@@ -244,16 +244,11 @@ def run_tests():
 
 
 # ----------------------------
-# SAFE DEPLOY ENTRY (FIX BAD FILE DESCRIPTOR ISSUES)
+# SAFE DEPLOY ENTRY 
 # ----------------------------
-# Render uses: gunicorn app:app
-# IMPORTANT: your Python file MUST be named app.py
-# If your file has another name (example: main.py),
-# then use: gunicorn main:app
 
 if __name__ == "__main__":
-    # NEVER force Flask server in restricted environments
-    # prevents: Bad file descriptor / WERKZEUG_SERVER_FD crash
+    
     print("App loaded successfully.")
     print("Run locally with: python app.py")
     print("Deploy with Render using: gunicorn app:app")
