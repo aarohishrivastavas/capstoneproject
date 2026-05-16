@@ -5,6 +5,7 @@ Deploy on Render with: gunicorn app:app
 requirements.txt:
     flask
     gunicorn
+    requests
 
 Procfile:
     web: gunicorn app:app
@@ -13,6 +14,7 @@ Procfile:
 from flask import Flask, request, redirect, jsonify
 import json
 import os
+import requests
 from datetime import datetime, date
 
 os.environ["FLASK_SKIP_DOTENV"] = "1"
@@ -104,13 +106,44 @@ def detect_category(goal):
 def generate_plan(goal):
     if not isinstance(goal, str) or not goal.strip():
         return _generic_tasks("your goal")
-    cat = detect_category(goal)
-    base = TASK_TEMPLATES.get(cat)
-    tasks = [dict(t) for t in base] if base else _generic_tasks(goal)
-    for t in tasks:
-        t["completed"] = False
-        t["note"] = ""
-    return tasks
+    try:
+        api_key = os.environ.get("GROQ_API_KEY")
+        if not api_key:
+            print("No GROQ_API_KEY set, using fallback")
+            return _generic_tasks(goal)
+        
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        payload = {
+            "model": "mixtral-8x7b-32768",
+            "messages": [{
+                "role": "user",
+                "content": f"""You are a goal planning assistant. Given this goal: {goal}
+
+Return ONLY a valid JSON array of 6 tasks. Each task must have: task, frequency, difficulty, priority.
+frequency: daily, weekly, or once
+difficulty: easy, medium, or hard
+priority: high, medium, or low
+
+RESPOND WITH ONLY THE JSON ARRAY, NO OTHER TEXT."""
+            }],
+            "max_tokens": 800,
+            "temperature": 0.7
+        }
+        
+        resp = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload, timeout=10)
+        if resp.status_code != 200:
+            print(f"Groq API error: {resp.status_code}, using fallback")
+            return _generic_tasks(goal)
+        
+        content = resp.json()["choices"][0]["message"]["content"].strip()
+        tasks = json.loads(content)
+        for t in tasks:
+            t["completed"] = False
+            t["note"] = ""
+        return tasks
+    except Exception as e:
+        print(f"LLM error: {e}, using fallback")
+        return _generic_tasks(goal)
 
 
 def _generic_tasks(goal):
